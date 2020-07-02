@@ -17,9 +17,17 @@ const projectSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Character'
   }],
-  costumes: [{
+  // costumes: [{
+  //   type: Schema.Types.ObjectId,
+  //   ref: 'Costume'
+  // }],
+  // teams: [{
+  //   type: Schema.Types.ObjectId,
+  //   ref: 'Team'
+  // }],
+  users: [{
     type: Schema.Types.ObjectId,
-    ref: 'Costume'
+    ref: 'User'
   }],
 }, {
   timestamps: true

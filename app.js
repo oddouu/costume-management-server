@@ -9,6 +9,11 @@ const mongoose     = require('mongoose');
 const logger       = require('morgan');
 const path         = require('path');
 
+const cors = require('cors');
+const session = require('express-session');
+const passport = require('passport');
+
+require('./config/passport');
 
 mongoose
   .connect('mongodb://localhost/costume-management-server', {useNewUrlParser: true})
@@ -44,15 +49,39 @@ app.set('view engine', 'hbs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon.ico')));
 
+// session settings
+app.use(session({
+  secret: 'myapplication',
+  resave: true,
+  saveUninitialized: true,
+  rolling: true,
+  cookie: {
+    expires: 60000
+  }
+}));
 
+app.use(passport.initialize());
+app.use(passport.session());
 
 // default value for title local
-app.locals.title = 'Express - Generated with IronGenerator';
+app.locals.title = 'costume management app';
 
+// CORS settings
+app.use(
+  cors({
+    credentials: true, // IMPORTANT! We will receive the credentials on the backend when requesting stuff using axios. if we want to add the token in the header of the API request, we need to add the credentials in the CORS settings
+    origin: ['http://localhost:3000']
+  })
+);
 
 
 const index = require('./routes/index');
 app.use('/', index);
+app.use('/api', require('./routes/project-routes'));
+// app.use('/api', require('./routes/character-routes'));
+// app.use('/api', require('./routes/costume-routes'));
+// app.use('/api', require('./routes/scene-routes'));
+app.use('/api', require('./routes/auth-routes'));
 
 
 module.exports = app;
