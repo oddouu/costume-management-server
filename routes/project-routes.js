@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Project = require("../models/project-model");
 const Scene = require("../models/scene-model");
 const Character = require("../models/character-model");
+const Costume = require("../models/costume-model");
 
 // GET route => to get all the projects
 router.get("/projects", (req, res) => {
@@ -201,30 +202,65 @@ router.delete("/projects/:id", (req, res) => {
     return;
   }
 
-  if (req.isAuthenticated()) {
-    Project.findById(req.params.id)
-      .then(project => {
-        if (project.users.includes(req.user._id)) {
-          Project.findByIdAndDelete(req.params.id)
-            .then(response =>
-              res.status(200).json({
-                response,
-                message: "project deleted successfully",
-              })
-            )
-            .catch(err => res.status(500).json(err));
-        } else {
-          res.status(403).json({
-            message: "Access forbidden.",
-          });
-        }
-      })
-      .catch(err => res.json(err));
-  } else {
+  if (!req.isAuthenticated()) {
     res.status(403).json({
       message: "Access forbidden.",
     });
+    return;
   }
+
+  Project.findById(req.params.id)
+    .then(project => {
+      if (!project.users.includes(req.user._id)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      Project.findByIdAndDelete(req.params.id)
+        .populate('characters')
+        .then(deletedProject => {
+
+          // to obtain the list of ids of costumes to delete:
+          // 1. it takes the deletedProject object obtained from the callback of findByIdAndDelete
+          // 2. it populates the characters field (deletedProject) in order to extract the costumes array contained in each character document
+          // 3. it maps the array with characters associated to the deleted project to obtain an array with costumes ids
+          // 4. since this is an array where each element is an array (Character.costumes array), it ultimately flattens everything by using the reduce array method
+
+          const costumesToDelete = deletedProject.characters.map(eachCharacter => eachCharacter.costumes).reduce((a, b) => a.concat(b));
+
+          Costume.deleteMany({
+              _id: {
+                $in: costumesToDelete
+              }
+            })
+            .then(deletedCostumes => {
+              Character.deleteMany({
+                  _id: {
+                    $in: deletedProject.characters
+                  }
+                })
+                .then(deletedCharacters => {
+                  Scene.deleteMany({
+                      _id: {
+                        $in: deletedProject.scenes
+                      }
+                    })
+                    .then(deletedScenes => {
+                      res.status(200).json({
+                        deletedProject,
+                        deletedCostumes,
+                        deletedCharacters,
+                        deletedScenes,
+                        message: "project, as well as characters, costumes and scenes associated, were deleted successfully",
+                      });
+                    });
+                });
+            });
+        });
+    })
+    .catch(err => res.json(err));
 });
 
 module.exports = router;
