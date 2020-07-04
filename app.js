@@ -79,7 +79,7 @@ const index = require('./routes/index');
 app.use('/', index);
 app.use('/api', require('./routes/project-routes'));
 app.use('/api', require('./routes/character-routes'));
-// app.use('/api', require('./routes/costume-routes'));
+app.use('/api', require('./routes/costume-routes'));
 // app.use('/api', require('./routes/scene-routes'));
 app.use('/api', require('./routes/auth-routes'));
 

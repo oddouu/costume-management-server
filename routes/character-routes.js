@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Character = require("../models/character-model");
 const Project = require("../models/project-model");
 const Costume = require("../models/costume-model");
+const Scene = require("../models/scene-model");
 
 // GET route => to get all the characters of a specific project, if the user is entitled to see this content.
 router.get("/projects/:projId/characters", (req, res) => {
@@ -191,6 +192,8 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
         return;
       }
 
+      // need to connect scenes with characters
+
       Character.findByIdAndUpdate(req.params.charId, req.body, {
           new: true
         })
@@ -232,22 +235,38 @@ router.delete("/projects/:projId/characters/:charId", (req, res) => {
         return;
       }
 
-      Character.findByIdAndDelete(req.params.charId)
-        .then(deletedCharacter => {
-
-          // need to also remove the character Id from the characters array of Scene documents
-
-          Costume.deleteMany({
-              _id: {
-                $in: deletedCharacter.costumes
-              }
-            })
-            .then((deletedCostumes) => {
-              res.status(200).json({
-                deletedCostumes,
-                deletedCharacter,
-                message: "character and related costumes deleted successfully",
-              });
+      Project.findByIdAndUpdate(req.params.projId, {
+          $pull: {
+            characters: req.params.charId
+          }
+        })
+        .then(() => {
+          Character.findByIdAndDelete(req.params.charId)
+            .then(deletedCharacter => {
+              Costume.deleteMany({
+                  _id: {
+                    $in: deletedCharacter.costumes
+                  }
+                })
+                .then(() => {
+                  Scene.updateMany({
+                    characters: {
+                      $in: [req.params.charId]
+                    }
+                  }, {
+                    $pull: {
+                      characters: req.params.charId
+                    }
+                  })
+                  .then(() => {
+                      res.status(200).json({
+                        deletedCharacter,
+                        message: "character and related costumes deleted successfully",
+                      });
+                    })
+                    .catch(err => res.json(err));
+                })
+                .catch(err => res.json(err));
             })
             .catch(err => res.json(err));
         })
