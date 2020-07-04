@@ -6,6 +6,46 @@ const Project = require("../models/project-model");
 const Costume = require("../models/costume-model");
 const Scene = require("../models/scene-model");
 
+// GET route => to SEARCH for all the scenes of a specific project, if the user is entitled to see this content, based on a query.
+router.get(`/projects/:projId/scenes/search`, (req, res) => {
+
+  let q = req.query.q;
+
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .populate('scenes')
+    .then((foundProject) => {
+      if (!foundProject.users.includes(req.user._id)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      const filteredScenes = foundProject.scenes.filter(scene => scene.description && scene.description.toLowerCase().includes(q.toLowerCase()) || scene.timeOfDay && scene.timeOfDay.includes(q));
+
+      res.json(filteredScenes);
+    })
+    .catch(err => {
+      res.json(err);
+    });
+});
+
+
 // GET route => to get all the scenes of a specific project, if the user is entitled to see this content.
 router.get("/projects/:projId/scenes", (req, res) => {
 
@@ -141,8 +181,76 @@ router.get("/projects/:projId/scenes/:sceneId", (req, res) => {
 
 });
 
-// PUT route => to update a specific scene
+// PUT route => to attach a specific character id to a specific scene Id
+
+router.put("/projects/:projId/scenes/:sceneId/addCharacter/:charId", (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.sceneId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .then(foundProject => {
+
+      if (!foundProject.users.includes(req.user._id) || !foundProject.scenes.includes(req.params.sceneId) || !foundProject.characters.includes(req.params.charId)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      Scene.findByIdAndUpdate(req.params.sceneId, {
+          $push: {
+            characters: req.params.charId
+          }
+        }, {
+          new: true
+        })
+        .then(updatedScene => {
+
+          Character.findByIdAndUpdate(req.params.charId, {
+              $push: {
+                scenes: req.params.sceneId
+              }
+            }, {
+              new: true
+            })
+            .then(updatedCharacter => {
+              res.json({
+                message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
+                updatedScene,
+                updatedCharacter
+              });
+
+            })
+            .catch(err => res.json(err));
+        })
+        .catch(err => res.json(err));
+    })
+    .catch(err => res.json(err));
+});
+
+// PUT route => to update a specific scene, only with certain information
 router.put("/projects/:projId/scenes/:sceneId", (req, res) => {
+
+  const {
+    sceneNumber,
+    storyDayNumber,
+    description,
+    timeOfDay,
+    season
+  } = req.body;
+
+
   if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.sceneId)) {
     res.status(400).json({
       message: "id is not valid",
@@ -167,9 +275,13 @@ router.put("/projects/:projId/scenes/:sceneId", (req, res) => {
         return;
       }
 
-      // need to connect scenes with characters
-
-      Scene.findByIdAndUpdate(req.params.sceneId, req.body, {
+      Scene.findByIdAndUpdate(req.params.sceneId, {
+          sceneNumber,
+          storyDayNumber,
+          description,
+          timeOfDay,
+          season
+        }, {
           new: true
         })
         .then(updatedScene => {

@@ -65,7 +65,11 @@ router.post("/projects/:projId/characters/:charId/costumes", (req, res) => {
   }
 
   const {
-    elements
+    description,
+    costumeNumber,
+    gender,
+    elements,
+    imageUrl
   } = req.body;
 
   Project.findById(req.params.projId)
@@ -77,7 +81,11 @@ router.post("/projects/:projId/characters/:charId/costumes", (req, res) => {
         return;
       }
       Costume.create({
+          description,
+          costumeNumber,
+          gender,
           elements,
+          imageUrl,
           character: req.params.charId,
           project: req.params.projId
         })
@@ -156,8 +164,84 @@ router.get("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
 
 });
 
+// PUT route => to attach a specific scene id to a specific costume Id
+router.put("/projects/:projId/characters/:charId/costumes/:costId/addScene/:sceneId", (req, res) => {
+
+
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.sceneId) || !mongoose.Types.ObjectId.isValid(req.params.charId) || !mongoose.Types.ObjectId.isValid(req.params.costId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .populate('characters')
+    .then(foundProject => {
+
+
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+      const doesCostumeBelongToCharacter = foundProject.characters
+        .find(eachCharacter => eachCharacter._id == req.params.charId)
+        .costumes
+        .includes(req.params.costId);
+
+      if (!foundProject.users.includes(req.user._id) || !foundProject.scenes.includes(req.params.sceneId) || !charactersIdsArr.includes(req.params.charId) || !doesCostumeBelongToCharacter) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+      Costume.findByIdAndUpdate(req.params.costId, {
+          $push: {
+            scenes: req.params.sceneId
+          }
+        }, {
+          new: true
+        })
+        .then(updatedCostume => {
+          Scene.findByIdAndUpdate(req.params.sceneId, {
+              $push: {
+                costumes: req.params.costId
+              }
+            }, {
+              new: true
+            })
+            .then(updatedScene => {
+              res.json({
+                message: `Costume with ID ${req.params.costId} was updated successfully.`,
+                updatedScene,
+                updatedCostume
+              });
+
+            })
+            .catch(err => res.json(err));
+        })
+        .catch(err => res.json(err));
+    })
+    .catch(err => res.json(err));
+});
+
+
 // PUT route => to update a specific costume
 router.put("/projects/:projId/characters/:charId/costumes/:costId", (req, res) => {
+
+  const {
+    description,
+    costumeNumber,
+    gender,
+    elements,
+    imageUrl
+  } = req.body;
+
   if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
     res.status(400).json({
       message: "id is not valid",
@@ -190,7 +274,13 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
         return;
       }
 
-      Costume.findByIdAndUpdate(req.params.costId, req.body, {
+      Costume.findByIdAndUpdate(req.params.costId, {
+          description,
+          costumeNumber,
+          gender,
+          elements,
+          imageUrl
+        }, {
           new: true
         })
         .then((updatedCostume) => {

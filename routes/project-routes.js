@@ -158,6 +158,16 @@ router.get("/projects/:id", (req, res) => {
 
 // PUT route => to update a specific project
 router.put("/projects/:id", (req, res) => {
+
+  const {
+    title,
+    movieDirectorName,
+    scriptWriter,
+    date,
+    productionName
+  } = req.body;
+
+
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({
       message: "id is not valid",
@@ -169,7 +179,13 @@ router.put("/projects/:id", (req, res) => {
     Project.findById(req.params.id)
       .then(project => {
         if (project.users.includes(req.user._id)) {
-          Project.findByIdAndUpdate(req.params.id, req.body, {
+          Project.findByIdAndUpdate(req.params.id, {
+                title,
+                movieDirectorName,
+                scriptWriter,
+                date,
+                productionName
+              }, {
               new: true
             })
             .then(response => {
