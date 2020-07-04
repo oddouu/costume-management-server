@@ -9,6 +9,10 @@ const projectSchema = new Schema({
   productionName: String,
   numberOfScenes: Number,
   numberOfCharacters: Number,
+  locations: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Location'
+  }],
   scenes: [{
     type: Schema.Types.ObjectId,
     ref: 'Scene'

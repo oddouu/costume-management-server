@@ -31,16 +31,17 @@ router.get("/projects/:projId/characters/:charId/costumes", (req, res) => {
       }
     })
     .then((foundProject) => {
-      if (!foundProject.users.includes(req.user._id)) {
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+      if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId)) {
         res.status(403).json({
           message: "Access forbidden.",
         });
         return;
       }
 
-      const filteredCharacter = foundProject.characters.filter(eachCharacter => eachCharacter._id == req.params.charId);
-      console.log('FILTER', filteredCharacter[0].costumes);
-      res.json(filteredCharacter[0].costumes);
+      const foundCharacter = foundProject.characters.find(eachCharacter => eachCharacter._id == req.params.charId);
+      res.json(foundCharacter.costumes);
     })
     .catch(err => {
       res.json(err);
@@ -86,6 +87,7 @@ router.post("/projects/:projId/characters/:charId/costumes", (req, res) => {
           gender,
           elements,
           imageUrl,
+          numberOfScenes: 0,
           character: req.params.charId,
           project: req.params.projId
         })
@@ -203,6 +205,9 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId/addScene/:scen
       Costume.findByIdAndUpdate(req.params.costId, {
           $push: {
             scenes: req.params.sceneId
+          },
+          $inc: {
+            numberOfScenes: 1
           }
         }, {
           new: true
@@ -295,7 +300,81 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
 
 });
 
-// DELETE route => to delete a specific character
+// DELETE route => to delete all costumes of a specific character
+router.delete("/projects/:projId/characters/:charId/costumes", (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .populate({
+      path: 'characters',
+      populate: {
+        path: 'costumes',
+      }
+    })
+    .then((foundProject) => {
+
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+      if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      const foundCharacter = foundProject.characters.find(eachCharacter => eachCharacter._id == req.params.charId);
+      const costumesIdsToDelete = foundCharacter.costumes.map(eachCostume => eachCostume._id);
+
+      Costume.deleteMany({
+          _id: {
+            $in: costumesIdsToDelete
+          }
+        })
+        .then((response) => {
+          Scene.updateMany({
+              characters: {
+                $in: [req.params.charId]
+              }
+            }, {
+              $set: {
+                costumes: []
+              }
+            })
+            .then(() => {
+              Character.findByIdAndUpdate(req.params.charId, {
+                  $set: {
+                    costumes: [],
+                    numberOfCostumes: 0
+                  }
+                })
+                .then(() => {
+                  res.json(response);
+
+                })
+                .catch(err => res.json(err));
+
+            })
+            .catch(err => res.json(err));
+
+        })
+        .catch(err => res.json(err));
+    })
+    .catch(err => res.json(err));
+});
+
+// DELETE route => to delete a specific costume
 router.delete("/projects/:projId/characters/:charId/costumes/:costId", (req, res) => {
 
   if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {

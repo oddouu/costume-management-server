@@ -7,6 +7,7 @@ const costumeSchema = new Schema({
   elements: [String],
   gender: String,
   imageUrl: String,
+  numberOfScenes: Number,
   project: {
     type: Schema.Types.ObjectId,
     ref: 'Project'

@@ -81,6 +81,7 @@ app.use('/api', require('./routes/project-routes'));
 app.use('/api', require('./routes/character-routes'));
 app.use('/api', require('./routes/costume-routes'));
 app.use('/api', require('./routes/scene-routes'));
+app.use('/api', require('./routes/location-routes'));
 app.use('/api', require('./routes/auth-routes'));
 
 

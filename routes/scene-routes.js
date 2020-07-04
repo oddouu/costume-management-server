@@ -340,6 +340,9 @@ router.delete("/projects/:projId/scenes/:sceneId", (req, res) => {
                 }, {
                   $pull: {
                     scenes: req.params.sceneId
+                  },
+                  $inc: {
+                    numberOfScenes: -1
                   }
                 })
                 .then(() => {

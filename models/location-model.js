@@ -7,7 +7,11 @@ const locationSchema = new Schema({
   scenes: [{
     type: Schema.Types.ObjectId,
     ref: 'Scene'
-  }]
+  }],
+  project: {
+    type: Schema.Types.ObjectId,
+    ref: 'Project'
+  }
 }, {
   timestamps: true
 });

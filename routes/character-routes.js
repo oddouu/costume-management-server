@@ -90,7 +90,8 @@ router.post("/projects/:projId/characters", (req, res) => {
             emptyCostumesArray.push({
               costumeNumber: i,
               project: req.params.projId,
-              character: newCharacter._id
+              character: newCharacter._id,
+              numberOfScenes: 0
             });
           }
           Costume.create(emptyCostumesArray)
@@ -232,8 +233,12 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
     characterName,
     actorName,
     age,
-    imageUrl
+    imageUrl,
+    numberOfCostumes
   } = req.body;
+
+  let emptyCostumesArray = [];
+
 
 
   if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
@@ -251,32 +256,75 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
   }
 
   Project.findById(req.params.projId)
+    .populate('characters')
     .then(foundProject => {
 
-      if (!foundProject.users.includes(req.user._id) || !foundProject.characters.includes(req.params.charId)) {
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+      if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId)) {
         res.status(403).json({
           message: "Access forbidden.",
         });
         return;
       }
 
-      // need to connect scenes with characters
+      const foundCharacter = foundProject.characters.find(eachCharacter => eachCharacter._id == req.params.charId);
 
-      Character.findByIdAndUpdate(req.params.charId, {
-          characterName,
-          actorName,
-          age,
-          imageUrl
-        }, {
-          new: true
-        })
-        .then(response => {
-          res.json({
-            message: `Character with ID ${req.params.charId} was updated successfully.`,
-            response
+      if (!foundCharacter.costumes.length) {
+        for (let i = 1; i <= numberOfCostumes; i++) {
+          emptyCostumesArray.push({
+            costumeNumber: i,
+            project: req.params.projId,
+            character: req.params.charId,
+            numberOfScenes: 0
           });
-        })
-        .catch(err => res.json(err));
+        }
+
+        
+        Costume.create(emptyCostumesArray)
+          .then(createdCostumes => {
+            const costumesIdsArr = createdCostumes.map(eachCostume => eachCostume._id);
+            
+            Character.findByIdAndUpdate(req.params.charId, {
+                costumes: costumesIdsArr,
+                characterName,
+                actorName,
+                age,
+                imageUrl,
+                numberOfCostumes
+              }, {
+                new: true
+              })
+              .then((updatedCharacter) => {
+                res.json(updatedCharacter);
+              })
+              .catch(err => res.json(err));
+          })
+          .catch(err => res.json(err));
+
+      } else {
+
+        if (numberOfCostumes) {
+          res.json({message: 'this character already has costumes. Make sure to not pass any numberOfCostumes in the body of your request. If you want to create new costumes, go to POST /projects/:projId/character/:charId/costumes'});
+          return;
+        }
+
+        Character.findByIdAndUpdate(req.params.charId, {
+            characterName,
+            actorName,
+            age,
+            imageUrl
+          }, {
+            new: true
+          })
+          .then(updatedCharacter => {
+            res.json({
+              message: `Character with ID ${req.params.charId} was updated successfully.`,
+              updatedCharacter
+            });
+          })
+          .catch(err => res.json(err));
+      }
     })
     .catch(err => res.json(err));
 });
