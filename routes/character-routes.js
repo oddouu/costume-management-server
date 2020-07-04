@@ -238,6 +238,9 @@ router.delete("/projects/:projId/characters/:charId", (req, res) => {
       Project.findByIdAndUpdate(req.params.projId, {
           $pull: {
             characters: req.params.charId
+          },
+          $inc: {
+            numberOfCharacters: -1
           }
         })
         .then(() => {
@@ -250,15 +253,15 @@ router.delete("/projects/:projId/characters/:charId", (req, res) => {
                 })
                 .then(() => {
                   Scene.updateMany({
-                    characters: {
-                      $in: [req.params.charId]
-                    }
-                  }, {
-                    $pull: {
-                      characters: req.params.charId
-                    }
-                  })
-                  .then(() => {
+                      characters: {
+                        $in: [req.params.charId]
+                      }
+                    }, {
+                      $pull: {
+                        characters: req.params.charId
+                      }
+                    })
+                    .then(() => {
                       res.status(200).json({
                         deletedCharacter,
                         message: "character and related costumes deleted successfully",
