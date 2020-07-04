@@ -75,7 +75,7 @@ router.post("/projects/:projId/characters/:charId/costumes", (req, res) => {
 
   Project.findById(req.params.projId)
     .then((foundProject) => {
-      if (!foundProject.users.includes(req.user._id)) {
+      if (!foundProject.users.includes(req.user._id) || !foundProject.characters.includes(req.params.charId)) {
         res.status(403).json({
           message: "Access forbidden.",
         });

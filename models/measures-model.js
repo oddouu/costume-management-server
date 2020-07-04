@@ -2,12 +2,24 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const measuresSchema = new Schema({
-  height: String,
-  waist: String,
-  shoulders: String,
-  hips: String,
-  leg: String,
-  shoe: String,
+  heightMeasures: Number,
+  shouldersMeasures: Number,
+  chestMeasures: Number,
+  waistMeasures: Number,
+  hipsMeasures: Number,
+  armMeasures: Number,
+  legMeasures: Number,
+  unitMeasure: String,
+  shirtSize: String,
+  coatSize: String,
+  trousersSize: String,
+  shoeSize: String,
+  suitSize: String,
+  braSize: String,
+  project: {
+    type: Schema.Types.ObjectId,
+    ref: 'Project'
+  },
   character: {
     type: Schema.Types.ObjectId,
     ref: 'Character'
@@ -16,6 +28,6 @@ const measuresSchema = new Schema({
   timestamps: true
 });
 
-const Measures = mongoose.model('Measures', measuresSchema);
+const actorMeasures = mongoose.model('actorMeasures', measuresSchema);
 
-module.exports = Measures;
+module.exports = actorMeasures;
