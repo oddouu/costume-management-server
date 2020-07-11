@@ -145,6 +145,51 @@ router.post("/projects/:projId/scenes", (req, res) => {
     .catch(err => res.json(err));
 });
 
+// GET route => to check if there are scenes with the same scene number
+router.get("/projects/:projId/scenes/hasDuplicateSceneNumber", (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .populate('scenes')
+    .then((foundProject) => {
+      if (!foundProject.users.includes(req.user._id)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      let hasDuplicate = false;
+
+      foundProject.scenes.map(eachScene => eachScene.sceneNumber).sort().sort((a, b) => {
+        if (a == b) {
+          hasDuplicate = true;
+        }
+      });
+
+      console.log(hasDuplicate)
+      res.json({
+        hasDuplicate
+      });
+    })
+    .catch(err => {
+      res.json(err);
+    });
+});
+
 
 // GET route => to get one single scene by id
 router.get("/projects/:projId/scenes/:sceneId", (req, res) => {

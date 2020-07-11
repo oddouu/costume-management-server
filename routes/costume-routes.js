@@ -67,20 +67,47 @@ router.post("/projects/:projId/characters/:charId/costumes", (req, res) => {
 
   const {
     description,
-    costumeNumber,
     gender,
     elements,
     imageUrl
   } = req.body;
 
+  let costumeNumber = req.body.costumeNumber;
+
   Project.findById(req.params.projId)
+    .populate({
+      path: 'characters',
+      populate: {
+        path: 'costumes',
+      }
+    })
     .then((foundProject) => {
-      if (!foundProject.users.includes(req.user._id) || !foundProject.characters.includes(req.params.charId)) {
+
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+      const costumeNumbersArray = foundProject.characters
+        .find(eachCharacter => eachCharacter._id == req.params.charId)
+        .costumes
+        .map(eachCostume => eachCostume.costumeNumber);
+
+
+      if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId)) {
         res.status(403).json({
           message: "Access forbidden.",
         });
         return;
       }
+
+      if (costumeNumbersArray.includes(costumeNumber)) {
+        res.status(500).json({
+          message: `Invalid costume number. The next available number is ${Math.max(...costumeNumbersArray)+1}`
+        });
+      }
+
+      if (!costumeNumber) {
+        costumeNumber = Math.max(...costumeNumbersArray) + 1;
+      }
+
       Costume.create({
           description,
           costumeNumber,
@@ -262,7 +289,12 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
   }
 
   Project.findById(req.params.projId)
-    .populate('characters')
+    .populate({
+      path: 'characters',
+      populate: {
+        path: 'costumes',
+      }
+    })
     .then((foundProject) => {
 
       const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
@@ -270,13 +302,25 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
       const doesCostumeBelongToCharacter = foundProject.characters
         .find(eachCharacter => eachCharacter._id == req.params.charId)
         .costumes
+        .map(eachCostume => eachCostume._id)
         .includes(req.params.costId);
+
+      const costumeNumbersArray = foundProject.characters
+        .find(eachCharacter => eachCharacter._id == req.params.charId)
+        .costumes
+        .map(eachCostume => eachCostume.costumeNumber);
 
       if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId) || !doesCostumeBelongToCharacter) {
         res.status(403).json({
           message: "Access forbidden.",
         });
         return;
+      }
+
+      if (costumeNumbersArray.includes(costumeNumber)) {
+        res.status(500).json({
+          message: `Invalid costume number. The next available number is ${Math.max(...costumeNumbersArray)+1}`
+        });
       }
 
       Costume.findByIdAndUpdate(req.params.costId, {

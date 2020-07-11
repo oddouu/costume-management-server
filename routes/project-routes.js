@@ -41,9 +41,7 @@ router.post("/projects", (req, res) => {
 
     let emptyScenesArray = [];
     let emptyCharactersArray = [];
-    let createdProjectId;
-
-    console.clear();
+   
 
     Project.create({
         title,
@@ -56,9 +54,7 @@ router.post("/projects", (req, res) => {
         users: [req.user._id],
       })
       .then((createdProject) => {
-        // stores project Id in order to use it later
-        createdProjectId = createdProject._id;
-
+        
         // pre-fills Scenes array depending on user input
         for (let i = 1; i <= numberOfScenes; i++) {
           emptyScenesArray.push({
@@ -100,7 +96,7 @@ router.post("/projects", (req, res) => {
                   charIdArr,
                 });
 
-                Project.findByIdAndUpdate(createdProjectId, {
+                Project.findByIdAndUpdate(createdProject._id, {
                     scenes: scenesIdArr,
                     characters: charIdArr,
                   }, {

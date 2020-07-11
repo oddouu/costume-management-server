@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const costumeSchema = new Schema({
-  costumeNumber: String,
+  costumeNumber: {
+    type: Number,
+  },
   description: String,
   elements: [String],
   gender: String,

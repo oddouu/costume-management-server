@@ -54,7 +54,7 @@ app.use(session({
   secret: 'myapplication',
   resave: true,
   saveUninitialized: true,
-  rolling: true,
+  // rolling: true,
   cookie: {
     expires: 60000
   }
