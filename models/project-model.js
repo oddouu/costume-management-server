@@ -3,6 +3,7 @@ const Schema = mongoose.Schema;
 
 const projectSchema = new Schema({
   title: String,
+  description: String,
   movieDirectorName: String,
   scriptWriter: String,
   date: Date,

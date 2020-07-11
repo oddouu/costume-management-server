@@ -31,6 +31,7 @@ router.post("/projects", (req, res) => {
   if (req.isAuthenticated()) {
     const {
       title,
+      description,
       movieDirectorName,
       scriptWriter,
       date,
@@ -45,6 +46,7 @@ router.post("/projects", (req, res) => {
 
     Project.create({
         title,
+        description,
         movieDirectorName,
         scriptWriter,
         date,
@@ -157,6 +159,7 @@ router.put("/projects/:id", (req, res) => {
 
   const {
     title,
+    description,
     movieDirectorName,
     scriptWriter,
     date,
@@ -177,6 +180,7 @@ router.put("/projects/:id", (req, res) => {
         if (project.users.includes(req.user._id)) {
           Project.findByIdAndUpdate(req.params.id, {
                 title,
+                description,
                 movieDirectorName,
                 scriptWriter,
                 date,
