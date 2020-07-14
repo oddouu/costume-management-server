@@ -285,6 +285,64 @@ router.put("/projects/:projId/scenes/:sceneId/addCharacter/:charId", (req, res) 
     .catch(err => res.json(err));
 });
 
+// PUT route => to attach a specific character id to a specific scene Id
+
+router.put("/projects/:projId/scenes/:sceneId/removeCharacter/:charId", (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.sceneId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .then(foundProject => {
+
+      if (!foundProject.users.includes(req.user._id) || !foundProject.scenes.includes(req.params.sceneId) || !foundProject.characters.includes(req.params.charId)) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      Scene.findByIdAndUpdate(req.params.sceneId, {
+          $pull: {
+            characters: req.params.charId
+          }
+        }, {
+          new: true
+        })
+        .then(updatedScene => {
+
+          Character.findByIdAndUpdate(req.params.charId, {
+              $pull: {
+                scenes: req.params.sceneId
+              }
+            }, {
+              new: true
+            })
+            .then(updatedCharacter => {
+              res.json({
+                message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
+                updatedScene,
+                updatedCharacter
+              });
+
+            })
+            .catch(err => res.json(err));
+        })
+        .catch(err => res.json(err));
+    })
+    .catch(err => res.json(err));
+});
+
 // PUT route => to update a specific scene, only with certain information
 router.put("/projects/:projId/scenes/:sceneId", (req, res) => {
 
