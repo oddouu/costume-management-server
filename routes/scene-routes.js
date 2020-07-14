@@ -217,6 +217,7 @@ router.get("/projects/:projId/scenes/:sceneId", (req, res) => {
       }
 
       Scene.findById(req.params.sceneId)
+        .populate('characters')
         .then((foundScene) => {
           res.json(foundScene);
         })
