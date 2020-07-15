@@ -88,6 +88,7 @@ authRoutes.post('/login', (req, res, next) => {
         return;
       }
       // We are now logged in (that's why we can also send req.user)
+      res.setHeader("Set-Cookie", "HttpOnly;Secure;SameSite=Strict");
       res.status(200).json(theUser);
     });
   })(req, res, next);
