@@ -270,7 +270,7 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
 
       const foundCharacter = foundProject.characters.find(eachCharacter => eachCharacter._id == req.params.charId);
 
-      if (!foundCharacter.costumes.length) {
+      if (!foundCharacter.costumes.length && numberOfCostumes) {
         for (let i = 1; i <= numberOfCostumes; i++) {
           emptyCostumesArray.push({
             costumeNumber: i,
