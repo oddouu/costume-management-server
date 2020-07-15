@@ -5,6 +5,7 @@ const sceneSchema = new Schema({
   sceneNumber: String,
   storyDayNumber: String,
   description: String,
+  intExt: String,
   timeOfDay: String,
   season: String,
   numberOfActors: Number,

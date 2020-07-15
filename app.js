@@ -16,7 +16,9 @@ const passport = require('passport');
 require('./config/passport');
 
 mongoose
-  .connect(process.env.MONGODB_URI, {useNewUrlParser: true})
+  .connect('mongodb://localhost/costume-management-server', {
+    useNewUrlParser: true
+  })
   .then(x => {
     console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`)
   })
