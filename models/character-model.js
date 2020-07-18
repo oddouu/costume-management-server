@@ -5,7 +5,10 @@ const characterSchema = new Schema({
   characterName: String,
   actorName: String,
   age: String,
-  imageUrl: String,
+  image: {
+    type: Schema.Types.ObjectId,
+    ref: 'Image'
+  },
   numberOfCostumes: Number,
   measures: {
     type: Schema.Types.ObjectId,

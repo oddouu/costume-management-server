@@ -6,6 +6,9 @@ const Project = require("../models/project-model");
 const Costume = require("../models/costume-model");
 const Scene = require("../models/scene-model");
 
+const uploadCloud = require('../config/cloudinary.js');
+const Image = require('../models/image-model');
+
 // GET route => to get all the characters of a specific project, if the user is entitled to see this content.
 router.get("/projects/:projId/characters", (req, res) => {
 

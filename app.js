@@ -1,13 +1,13 @@
 require('dotenv').config();
 
-const bodyParser   = require('body-parser');
+const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const express      = require('express');
-const favicon      = require('serve-favicon');
-const hbs          = require('hbs');
-const mongoose     = require('mongoose');
-const logger       = require('morgan');
-const path         = require('path');
+const express = require('express');
+const favicon = require('serve-favicon');
+const hbs = require('hbs');
+const mongoose = require('mongoose');
+const logger = require('morgan');
+const path = require('path');
 
 const cors = require('cors');
 const session = require('express-session');
@@ -15,8 +15,12 @@ const passport = require('passport');
 
 require('./config/passport');
 
+// mongoose
+//   .connect('mongodb://localhost/costume-management-server', {
+//     useNewUrlParser: true
+//   })
 mongoose
-  .connect('mongodb://localhost/costume-management-server', {
+  .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true
   })
   .then(x => {
@@ -34,17 +38,19 @@ const app = express();
 // Middleware Setup
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
 app.use(cookieParser());
 
 // Express View engine setup
 
 app.use(require('node-sass-middleware')({
-  src:  path.join(__dirname, 'public'),
+  src: path.join(__dirname, 'public'),
   dest: path.join(__dirname, 'public'),
   sourceMap: true
 }));
-      
+
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -56,7 +62,7 @@ app.use(session({
   secret: 'myapplication',
   resave: true,
   saveUninitialized: true,
-  // rolling: true,
+  rolling: true,
   cookie: {
     expires: 60000
   }
@@ -72,7 +78,7 @@ app.locals.title = 'costume management app';
 app.use(
   cors({
     credentials: true, // IMPORTANT! We will receive the credentials on the backend when requesting stuff using axios. if we want to add the token in the header of the API request, we need to add the credentials in the CORS settings
-    origin: ['http://localhost:3000']
+    origin: ['http://localhost:3000', 'http://costume-management-app.s3-website-eu-west-1.amazonaws.com', 'https://costume-management-client.herokuapp.com']
   })
 );
 

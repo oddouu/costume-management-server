@@ -184,6 +184,7 @@ router.get("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
       }
 
       Costume.findById(req.params.costId)
+        .populate('scenes')
         .then((foundCostume) => {
           res.json(foundCostume);
         })
