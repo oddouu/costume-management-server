@@ -194,6 +194,84 @@ router.get("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
 
 });
 
+// PUT route => to attach a few scene ids to a specific costume Id
+
+router.put("/projects/:projId/characters/:charId/costumes/:costId/addScenes/", (req, res) => {
+  console.log("inizia qui, con il log del body", req.body.scenes);
+
+  if (
+    !mongoose.Types.ObjectId.isValid(req.params.projId) ||
+    !mongoose.Types.ObjectId.isValid(req.params.charId) ||
+    !mongoose.Types.ObjectId.isValid(req.params.costId)
+  ) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .populate('characters')
+    .then((foundProject) => {
+
+
+      const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+
+      const doesCostumeBelongToCharacter = foundProject.characters
+        .find(eachCharacter => eachCharacter._id == req.params.charId)
+        .costumes
+        .includes(req.params.costId);
+
+
+
+      if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId) || !doesCostumeBelongToCharacter) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      Costume.findByIdAndUpdate(req.params.costId, {
+          scenes: req.body.scenes,
+        }, {
+          new: true
+        })
+        .then(updatedCostume => {
+          console.log("UPDATED COSTUME", updatedCostume)
+          Scene.updateMany({
+              _id: {
+                $in: [req.body.scenes],
+              },
+            }, {
+              $push: {
+                costumes: req.params.costId
+              }
+            }, {
+              new: true,
+            })
+            .then(updatedScene => {
+              res.json({
+                message: `Costume with ID ${req.params.costId} was updated successfully.`,
+                updatedScene,
+                updatedCostume
+              });
+
+            })
+            .catch(err => res.json(err));
+        })
+        .catch(err => res.json(err));
+    })
+    .catch(err => res.json(err));
+});
+
 // PUT route => to attach a specific scene id to a specific costume Id
 router.put("/projects/:projId/characters/:charId/costumes/:costId/addScene/:sceneId", (req, res) => {
 

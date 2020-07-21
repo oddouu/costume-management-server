@@ -5,6 +5,7 @@ const Character = require("../models/character-model");
 const Project = require("../models/project-model");
 const Costume = require("../models/costume-model");
 const Scene = require("../models/scene-model");
+const Location = require("../models/location-model");
 
 // GET route => to SEARCH for all the scenes of a specific project, if the user is entitled to see this content, based on a query.
 router.get(`/projects/:projId/scenes/search`, (req, res) => {
@@ -36,9 +37,9 @@ router.get(`/projects/:projId/scenes/search`, (req, res) => {
 
       const filteredScenes = foundProject.scenes.filter(
         (scene) =>
-          (scene.description &&
-            scene.description.toLowerCase().includes(q.toLowerCase())) ||
-          (scene.timeOfDay && scene.timeOfDay.includes(q))
+        (scene.description &&
+          scene.description.toLowerCase().includes(q.toLowerCase())) ||
+        (scene.timeOfDay && scene.timeOfDay.includes(q))
       );
 
       res.json(filteredScenes);
@@ -114,29 +115,27 @@ router.post("/projects/:projId/scenes", (req, res) => {
         return;
       }
       Scene.create({
-        sceneNumber,
-        storyDayNumber,
-        intExt,
-        description,
-        timeOfDay,
-        season,
-        project: req.params.projId,
-      })
+          sceneNumber,
+          storyDayNumber,
+          intExt,
+          description,
+          timeOfDay,
+          season,
+          project: req.params.projId,
+        })
         .then((newScene) => {
           Project.findByIdAndUpdate(
-            req.params.projId,
-            {
-              $push: {
-                scenes: newScene._id,
-              },
-              $inc: {
-                numberOfScenes: 1,
-              },
-            },
-            {
-              new: true,
-            }
-          )
+              req.params.projId, {
+                $push: {
+                  scenes: newScene._id,
+                },
+                $inc: {
+                  numberOfScenes: 1,
+                },
+              }, {
+                new: true,
+              }
+            )
             .then((updatedProject) => {
               res.json({
                 newScene,
@@ -238,14 +237,14 @@ router.get("/projects/:projId/scenes/:sceneId", (req, res) => {
     .catch((err) => res.json(err));
 });
 
-// PUT route => to attach a few character ids to a specific scene Id
+// PUT route => to attach a location id to a specific scene Id
 
-router.put("/projects/:projId/scenes/:sceneId/addCharacters/", (req, res) => {
-  console.log(req.body.characters);
-  
+router.put("/projects/:projId/scenes/:sceneId/addLocation/", (req, res) => {
+  console.log(req.body.location);
+
   if (
     !mongoose.Types.ObjectId.isValid(req.params.projId) ||
-    !mongoose.Types.ObjectId.isValid(req.params.sceneId) 
+    !mongoose.Types.ObjectId.isValid(req.params.sceneId)
   ) {
     res.status(400).json({
       message: "id is not valid",
@@ -264,7 +263,7 @@ router.put("/projects/:projId/scenes/:sceneId/addCharacters/", (req, res) => {
     .then((foundProject) => {
       if (
         !foundProject.users.includes(req.user._id) ||
-        !foundProject.scenes.includes(req.params.sceneId) 
+        !foundProject.scenes.includes(req.params.sceneId)
       ) {
         res.status(403).json({
           message: "Access forbidden.",
@@ -273,31 +272,93 @@ router.put("/projects/:projId/scenes/:sceneId/addCharacters/", (req, res) => {
       }
 
       Scene.findByIdAndUpdate(
-        req.params.sceneId,
-        {
-          characters: req.body.characters,
-        },
-        {
-          new: true,
-        }
-      )
+          req.params.sceneId, {
+            location: req.body.location,
+          }, {
+            new: true,
+          }
+        )
         .then((updatedScene) => {
-          Character.updateMany(
-            {
-              _id: {
-                $in: [req.body.characters],
-              },
-            },
+          Location.findByIdAndUpdate(
+              req.body.location,
 
-            {
-              $push: {
-                scenes: req.params.sceneId,
+              {
+                $push: {
+                  scenes: req.params.sceneId,
+                },
+              }, {
+                new: true,
+              }
+            )
+            .then((updatedLocation) => {
+              res.json({
+                message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
+                updatedScene,
+                updatedLocation,
+              });
+            })
+            .catch((err) => res.json(err));
+        })
+        .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+});
+// PUT route => to attach a few character ids to a specific scene Id
+
+router.put("/projects/:projId/scenes/:sceneId/addCharacters/", (req, res) => {
+  console.log(req.body.characters);
+
+  if (
+    !mongoose.Types.ObjectId.isValid(req.params.projId) ||
+    !mongoose.Types.ObjectId.isValid(req.params.sceneId)
+  ) {
+    res.status(400).json({
+      message: "id is not valid",
+    });
+    return;
+  }
+
+  if (!req.isAuthenticated()) {
+    res.status(403).json({
+      message: "Access forbidden.",
+    });
+    return;
+  }
+
+  Project.findById(req.params.projId)
+    .then((foundProject) => {
+      if (
+        !foundProject.users.includes(req.user._id) ||
+        !foundProject.scenes.includes(req.params.sceneId)
+      ) {
+        res.status(403).json({
+          message: "Access forbidden.",
+        });
+        return;
+      }
+
+      Scene.findByIdAndUpdate(
+          req.params.sceneId, {
+            characters: req.body.characters,
+          }, {
+            new: true,
+          }
+        )
+        .then((updatedScene) => {
+          Character.updateMany({
+                _id: {
+                  $in: [req.body.characters],
+                },
               },
-            },
-            {
-              new: true,
-            }
-          )
+
+              {
+                $push: {
+                  scenes: req.params.sceneId,
+                },
+              }, {
+                new: true,
+              }
+            )
             .then((updatedCharacter) => {
               res.json({
                 message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
@@ -348,28 +409,24 @@ router.put(
         }
 
         Scene.findByIdAndUpdate(
-          req.params.sceneId,
-          {
-            $push: {
-              characters: req.params.charId,
-            },
-          },
-          {
-            new: true,
-          }
-        )
+            req.params.sceneId, {
+              $push: {
+                characters: req.params.charId,
+              },
+            }, {
+              new: true,
+            }
+          )
           .then((updatedScene) => {
             Character.findByIdAndUpdate(
-              req.params.charId,
-              {
-                $push: {
-                  scenes: req.params.sceneId,
-                },
-              },
-              {
-                new: true,
-              }
-            )
+                req.params.charId, {
+                  $push: {
+                    scenes: req.params.sceneId,
+                  },
+                }, {
+                  new: true,
+                }
+              )
               .then((updatedCharacter) => {
                 res.json({
                   message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
@@ -422,28 +479,24 @@ router.put(
         }
 
         Scene.findByIdAndUpdate(
-          req.params.sceneId,
-          {
-            $pull: {
-              characters: req.params.charId,
-            },
-          },
-          {
-            new: true,
-          }
-        )
+            req.params.sceneId, {
+              $pull: {
+                characters: req.params.charId,
+              },
+            }, {
+              new: true,
+            }
+          )
           .then((updatedScene) => {
             Character.findByIdAndUpdate(
-              req.params.charId,
-              {
-                $pull: {
-                  scenes: req.params.sceneId,
-                },
-              },
-              {
-                new: true,
-              }
-            )
+                req.params.charId, {
+                  $pull: {
+                    scenes: req.params.sceneId,
+                  },
+                }, {
+                  new: true,
+                }
+              )
               .then((updatedCharacter) => {
                 res.json({
                   message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
@@ -500,19 +553,17 @@ router.put("/projects/:projId/scenes/:sceneId", (req, res) => {
       }
 
       Scene.findByIdAndUpdate(
-        req.params.sceneId,
-        {
-          sceneNumber,
-          storyDayNumber,
-          intExt,
-          description,
-          timeOfDay,
-          season,
-        },
-        {
-          new: true,
-        }
-      )
+          req.params.sceneId, {
+            sceneNumber,
+            storyDayNumber,
+            intExt,
+            description,
+            timeOfDay,
+            season,
+          }, {
+            new: true,
+          }
+        )
         .then((updatedScene) => {
           res.json({
             message: `Scene with ID ${req.params.sceneId} was updated successfully.`,
@@ -556,44 +607,38 @@ router.delete("/projects/:projId/scenes/:sceneId", (req, res) => {
       }
 
       Project.findByIdAndUpdate(req.params.projId, {
-        $pull: {
-          scenes: req.params.sceneId,
-        },
-        $inc: {
-          numberOfScenes: -1,
-        },
-      })
+          $pull: {
+            scenes: req.params.sceneId,
+          },
+          $inc: {
+            numberOfScenes: -1,
+          },
+        })
         .then(() => {
           Scene.findByIdAndDelete(req.params.sceneId)
             .then((deletedScene) => {
-              Costume.updateMany(
-                {
+              Costume.updateMany({
                   scenes: {
                     $in: [req.params.sceneId],
                   },
-                },
-                {
+                }, {
                   $pull: {
                     scenes: req.params.sceneId,
                   },
                   $inc: {
                     numberOfScenes: -1,
                   },
-                }
-              )
+                })
                 .then(() => {
-                  Character.updateMany(
-                    {
+                  Character.updateMany({
                       scenes: {
                         $in: [req.params.sceneId],
                       },
-                    },
-                    {
+                    }, {
                       $pull: {
                         scenes: req.params.sceneId,
                       },
-                    }
-                  )
+                    })
                     .then(() => {
                       res.status(200).json({
                         deletedScene,

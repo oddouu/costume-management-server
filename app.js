@@ -15,14 +15,14 @@ const passport = require('passport');
 
 require('./config/passport');
 
-// mongoose
-//   .connect('mongodb://localhost/costume-management-server', {
-//     useNewUrlParser: true
-//   })
 mongoose
-  .connect(process.env.MONGODB_URI, {
+  .connect('mongodb://localhost/costume-management-server', {
     useNewUrlParser: true
   })
+// mongoose
+//   .connect(process.env.MONGODB_URI, {
+//     useNewUrlParser: true
+//   })
   .then(x => {
     console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`)
   })
@@ -64,7 +64,7 @@ app.use(session({
   saveUninitialized: true,
   rolling: true,
   cookie: {
-    expires: 60000
+    expires: 600000
   }
 }));
 

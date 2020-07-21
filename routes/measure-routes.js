@@ -23,13 +23,11 @@ router.get("/projects/:projId/characters/:charId/measures", (req, res) => {
   }
 
   Project.findById(req.params.projId)
-    .populate({
-      path: 'characters',
-      populate: {
-        path: 'measures',
-      }
-    })
+    .populate(
+      'characters')
     .then((foundProject) => {
+
+      console.log("FOUND PROJECT: ", foundProject)
       const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
 
       if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId)) {
@@ -40,7 +38,13 @@ router.get("/projects/:projId/characters/:charId/measures", (req, res) => {
       }
 
       const foundCharacter = foundProject.characters.find(eachCharacter => eachCharacter._id == req.params.charId);
-      res.json(foundCharacter.measures);
+      console.log("FOUND CHARACTER: ", foundCharacter);
+      const measID = foundCharacter.measures;
+
+      actorMeasures.findById(measID)
+        .then(foundMeasures => {
+          res.json(foundMeasures);
+        })
     })
     .catch(err => {
       res.json(err);
