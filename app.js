@@ -92,6 +92,8 @@ app.use('/api', require('./routes/costume-routes'));
 app.use('/api', require('./routes/scene-routes'));
 app.use('/api', require('./routes/location-routes'));
 app.use('/api', require('./routes/auth-routes'));
+app.use('/api', require('./routes/image-routes'));
+
 
 
 module.exports = app;
