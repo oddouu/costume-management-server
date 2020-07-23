@@ -5,6 +5,7 @@ const Character = require("../models/character-model");
 const Project = require("../models/project-model");
 const Costume = require("../models/costume-model");
 const Scene = require("../models/scene-model");
+const Image = require("../models/image-model");
 
 // GET route => to get all the costumes of a specific character within a specific project, if the user is entitled to see this content.
 router.get("/projects/:projId/characters/:charId/costumes", (req, res) => {
@@ -185,6 +186,7 @@ router.get("/projects/:projId/characters/:charId/costumes/:costId", (req, res) =
 
       Costume.findById(req.params.costId)
         .populate('scenes')
+        .populate('images')
         .then((foundCostume) => {
           res.json(foundCostume);
         })
@@ -271,6 +273,75 @@ router.put("/projects/:projId/characters/:charId/costumes/:costId/addScenes/", (
     })
     .catch(err => res.json(err));
 });
+
+// PUT route => to attach a specific image id to a specific costume id
+router.put("/projects/:projId/characters/:charId/costumes/:costId/addImage/:imgId", (req,res) => {
+
+ if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.imgId) || !mongoose.Types.ObjectId.isValid(req.params.charId) || !mongoose.Types.ObjectId.isValid(req.params.costId)) {
+   res.status(400).json({
+     message: "id is not valid",
+   });
+   return;
+ }
+
+ if (!req.isAuthenticated()) {
+   res.status(403).json({
+     message: "Access forbidden.",
+   });
+   return;
+ }
+
+
+
+ Project.findById(req.params.projId)
+   .populate('characters')
+   .then(foundProject => {
+
+
+     const charactersIdsArr = foundProject.characters.map(eachCharacter => eachCharacter._id);
+
+     const doesCostumeBelongToCharacter = foundProject.characters
+       .find(eachCharacter => eachCharacter._id == req.params.charId)
+       .costumes
+       .includes(req.params.costId);
+
+     if (!foundProject.users.includes(req.user._id) || !charactersIdsArr.includes(req.params.charId) || !doesCostumeBelongToCharacter) {
+       res.status(403).json({
+         message: "Access forbidden.",
+       });
+       return;
+     }
+     Costume.findByIdAndUpdate(req.params.costId, {
+         $push: {
+           images: req.params.imgId
+         }
+       }, {
+         new: true
+       })
+       .then(updatedCostume => {
+         Image.findByIdAndUpdate(req.params.sceneId, {
+             $push: {
+               costumes: req.params.costId
+             }
+           }, {
+             new: true
+           })
+           .then(updatedImage => {
+             res.json({
+               message: `Costume with ID ${req.params.costId} was updated successfully.`,
+               updatedImage,
+               updatedCostume
+             });
+
+           })
+           .catch(err => res.json(err));
+       })
+       .catch(err => res.json(err));
+   })
+   .catch(err => res.json(err));
+
+});
+
 
 // PUT route => to attach a specific scene id to a specific costume Id
 router.put("/projects/:projId/characters/:charId/costumes/:costId/addScene/:sceneId", (req, res) => {

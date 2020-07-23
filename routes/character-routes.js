@@ -163,6 +163,7 @@ router.get("/projects/:projId/characters/:charId", (req, res) => {
       }
 
       Character.findById(req.params.charId)
+        .populate('image')
         .then((foundCharacter) => {
           res.json(foundCharacter);
         })
@@ -173,9 +174,9 @@ router.get("/projects/:projId/characters/:charId", (req, res) => {
 });
 
 
-// PUT route => to attach a specific scene id to a specific character Id
-router.put("/projects/:projId/characters/:charId/addScene/:sceneId", (req, res) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.sceneId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
+// PUT route => to attach a specific image id to a specific character Id
+router.put("/projects/:projId/characters/:charId/addImage/:imageId", (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.projId) || !mongoose.Types.ObjectId.isValid(req.params.imageId) || !mongoose.Types.ObjectId.isValid(req.params.charId)) {
     res.status(400).json({
       message: "id is not valid",
     });
@@ -192,31 +193,31 @@ router.put("/projects/:projId/characters/:charId/addScene/:sceneId", (req, res) 
   Project.findById(req.params.projId)
     .then(foundProject => {
 
-      if (!foundProject.users.includes(req.user._id) || !foundProject.scenes.includes(req.params.sceneId) || !foundProject.characters.includes(req.params.charId)) {
+      if (!foundProject.users.includes(req.user._id) || !foundProject.characters.includes(req.params.charId)) {
         res.status(403).json({
           message: "Access forbidden.",
         });
         return;
       }
-      Character.findByIdAndUpdate(req.params.charId, {
+      Image.findByIdAndUpdate(req.params.imageId, {
           $push: {
-            scenes: req.params.sceneId
+            characters: req.params.charId
           }
         }, {
           new: true
         })
-        .then(updatedCharacter => {
-          Scene.findByIdAndUpdate(req.params.sceneId, {
-              $push: {
-                characters: req.params.charId
+        .then(updatedImage => {
+          Character.findByIdAndUpdate(req.params.charId, {
+              $set: {
+                image: req.params.imageId
               }
             }, {
               new: true
             })
-            .then(updatedScene => {
+            .then(updatedCharacter => {
               res.json({
                 message: `Character with ID ${req.params.charId} was updated successfully.`,
-                updatedScene,
+                updatedImage,
                 updatedCharacter
               });
 
@@ -283,11 +284,11 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
           });
         }
 
-        
+
         Costume.create(emptyCostumesArray)
           .then(createdCostumes => {
             const costumesIdsArr = createdCostumes.map(eachCostume => eachCostume._id);
-            
+
             Character.findByIdAndUpdate(req.params.charId, {
                 costumes: costumesIdsArr,
                 characterName,
@@ -308,7 +309,9 @@ router.put("/projects/:projId/characters/:charId", (req, res) => {
       } else {
 
         if (numberOfCostumes) {
-          res.json({message: 'this character already has costumes. Make sure to not pass any numberOfCostumes in the body of your request. If you want to create new costumes, go to POST /projects/:projId/character/:charId/costumes'});
+          res.json({
+            message: 'this character already has costumes. Make sure to not pass any numberOfCostumes in the body of your request. If you want to create new costumes, go to POST /projects/:projId/character/:charId/costumes'
+          });
           return;
         }
 
