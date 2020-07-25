@@ -28,7 +28,7 @@ router.get("/projects", (req, res) => {
 
 // POST route => to create new projects
 router.post("/projects", (req, res) => {
-  if (true) {
+  if (req.isAuthenticated()) {
     const {
       title,
       description,
