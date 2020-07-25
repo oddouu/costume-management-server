@@ -78,7 +78,7 @@ app.locals.title = 'costume management app';
 app.use(
   cors({
     credentials: true, // IMPORTANT! We will receive the credentials on the backend when requesting stuff using axios. if we want to add the token in the header of the API request, we need to add the credentials in the CORS settings
-    origin: ['http://localhost:3000', 'http://costume-management-app.s3-website-eu-west-1.amazonaws.com']
+    origin: ['http://localhost:3000', 'http://costume-management-app.s3-website-eu-west-1.amazonaws.com', "https://costume-management-client.herokuapp.com/"]
   })
 );
 
